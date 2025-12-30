@@ -79,7 +79,7 @@ export function CategoryList({ searchQuery, onCategoryClick }: CategoryListProps
 
   return (
     <>
-      <div className="space-y-3">
+      <div className="space-y-3 w-full">
         {filteredCategories.map((category) => {
           const percentage = calculatePercentage(category.currentSpend, category.monthlyBudget);
           const utilizationBadge = getUtilizationBadge(percentage);
@@ -88,70 +88,57 @@ export function CategoryList({ searchQuery, onCategoryClick }: CategoryListProps
           return (
             <div
               key={category.id}
-              className="rounded-lg bg-surface-1 p-4 border border-border/50 hover:bg-surface-2 transition-colors cursor-pointer"
+              className="rounded-lg bg-surface-1 border border-border/50 hover:bg-surface-2 transition-colors cursor-pointer w-full overflow-hidden"
               onClick={() => onCategoryClick(category.id)}
             >
               {/* Mobile Layout */}
               {!isDesktop ? (
-                <div className="space-y-4">
+                <div className="space-y-3 p-3">
                   {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <div className={`h-10 w-10 rounded-lg ${getColorClass(category.color)} flex items-center justify-center shrink-0`}>
                         <DollarSign className="h-5 w-5 text-primary-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold truncate">{category.name}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-sm">{category.name}</h3>
                           <Badge variant={utilizationBadge.variant} className="text-xs shrink-0">
                             {utilizationBadge.text}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1 truncate">
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                           {category.description}
                         </p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0 ml-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCategoryId(category.id);
-                        console.log('Show actions menu');
-                      }}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
                   </div>
 
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg bg-surface-3 p-3 min-w-0">
-                      <div className="text-xs text-muted-foreground truncate">Budget</div>
-                      <div className="font-medium truncate">{formatCurrency(category.monthlyBudget)}</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-lg bg-surface-3 p-2">
+                      <div className="text-xs text-muted-foreground">Budget</div>
+                      <div className="font-medium text-sm">{formatCurrency(category.monthlyBudget)}</div>
                     </div>
-                    <div className="rounded-lg bg-surface-3 p-3 min-w-0">
-                      <div className="text-xs text-muted-foreground truncate">Spent</div>
-                      <div className="font-medium truncate">{formatCurrency(category.currentSpend)}</div>
+                    <div className="rounded-lg bg-surface-3 p-2">
+                      <div className="text-xs text-muted-foreground">Spent</div>
+                      <div className="font-medium text-sm">{formatCurrency(category.currentSpend)}</div>
                     </div>
-                    <div className="rounded-lg bg-surface-3 p-3 min-w-0">
-                      <div className="text-xs text-muted-foreground truncate">Remaining</div>
-                      <div className={`font-medium truncate ${remaining < 0 ? 'text-destructive' : 'text-positive'}`}>
+                    <div className="rounded-lg bg-surface-3 p-2">
+                      <div className="text-xs text-muted-foreground">Remaining</div>
+                      <div className={`font-medium text-sm ${remaining < 0 ? 'text-destructive' : 'text-positive'}`}>
                         {formatCurrency(remaining)}
                       </div>
                     </div>
-                    <div className="rounded-lg bg-surface-3 p-3 min-w-0">
-                      <div className="text-xs text-muted-foreground truncate">Expenses</div>
-                      <div className="font-medium truncate">{category.expenseCount}</div>
+                    <div className="rounded-lg bg-surface-3 p-2">
+                      <div className="text-xs text-muted-foreground">Expenses</div>
+                      <div className="font-medium text-sm">{category.expenseCount}</div>
                     </div>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Utilization</span>
                       <span className="font-medium">{percentage}%</span>
                     </div>
@@ -162,106 +149,81 @@ export function CategoryList({ searchQuery, onCategoryClick }: CategoryListProps
                       />
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 rounded-lg min-w-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCategoryClick(category.id);
-                      }}
-                    >
-                      View Details
-                    </Button>
-                  </div>
                 </div>
               ) : (
-                /* Desktop Layout - Fixed for no horizontal scroll */
-                <div className="flex items-center gap-4 w-full">
-                  {/* Left side: Category info */}
-                  <div className="flex items-center gap-4 min-w-0 flex-[1.5]"> {/* Changed from flex-2 */}
-                    <div className={`h-12 w-12 rounded-lg ${getColorClass(category.color)} flex items-center justify-center shrink-0`}>
-                      <DollarSign className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold truncate">{category.name}</h3>
-                        <Badge variant={utilizationBadge.variant} className="shrink-0">
-                          {utilizationBadge.text}
-                        </Badge>
+                /* Desktop Layout - Simplified */
+                <div className="p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Icon and Info */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`h-12 w-12 rounded-lg ${getColorClass(category.color)} flex items-center justify-center shrink-0`}>
+                        <DollarSign className="h-6 w-6 text-primary-foreground" />
                       </div>
                       
-                      <p className="text-sm text-muted-foreground truncate mt-1">
-                        {category.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Middle: Budget stats */}
-                  <div className="flex items-center gap-4 min-w-0 flex-2 overflow-hidden"> {/* Changed from flex-3 and added overflow-hidden */}
-                    <div className="text-center min-w-[80px] flex-1">
-                      <div className="text-sm text-muted-foreground truncate">Budget</div>
-                      <div className="font-semibold truncate">{formatCurrency(category.monthlyBudget)}</div>
-                    </div>
-                    <div className="text-center min-w-[80px] flex-1">
-                      <div className="text-sm text-muted-foreground truncate">Spent</div>
-                      <div className="font-semibold truncate">{formatCurrency(category.currentSpend)}</div>
-                    </div>
-                    <div className="text-center min-w-[80px] flex-1">
-                      <div className="text-sm text-muted-foreground truncate">Remaining</div>
-                      <div className={`font-semibold truncate ${remaining < 0 ? 'text-destructive' : 'text-positive'}`}>
-                        {formatCurrency(remaining)}
-                      </div>
-                    </div>
-                    <div className="text-center min-w-[80px] flex-1">
-                      <div className="text-sm text-muted-foreground truncate">Expenses</div>
-                      <div className="font-semibold truncate">{category.expenseCount}</div>
-                    </div>
-                  </div>
-
-                  {/* Right side: Progress and actions */}
-                  <div className="flex items-center gap-4 min-w-0 flex-1 shrink-0"> {/* Changed from flex-2 and added shrink-0 */}
-                    {/* Progress */}
-                    <div className="w-32 space-y-1 shrink-0">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground truncate">{percentage}%</span>
-                        <span className="text-muted-foreground truncate">Utilized</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-surface-3 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${getColorClass(category.color)}`}
-                          style={{ width: `${Math.min(percentage, 100)}%` }}
-                        />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold truncate">{category.name}</h3>
+                          <Badge variant={utilizationBadge.variant} className="shrink-0">
+                            {utilizationBadge.text}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {category.description}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-lg h-8 w-8 p-0 shrink-0"
-                        onClick={(e) => handleEditClick(category.id, e)}
-                      >
-                        <Edit className="h-3 w-3" />
-                        <span className="sr-only">Edit</span>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-lg shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCategoryClick(category.id);
-                        }}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                        <span className="sr-only">View</span>
-                      </Button>
+                    {/* Stats - Compact */}
+                    <div className="hidden lg:flex items-center gap-6">
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Budget</div>
+                        <div className="font-semibold text-sm">{formatCurrency(category.monthlyBudget)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Spent</div>
+                        <div className="font-semibold text-sm">{formatCurrency(category.currentSpend)}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-muted-foreground">Left</div>
+                        <div className={`font-semibold text-sm ${remaining < 0 ? 'text-destructive' : 'text-positive'}`}>
+                          {formatCurrency(remaining)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress and Actions */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="w-24 space-y-1">
+                        <div className="text-xs text-muted-foreground text-center">{percentage}%</div>
+                        <div className="h-2 w-full rounded-full bg-surface-3 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${getColorClass(category.color)}`}
+                            style={{ width: `${Math.min(percentage, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg h-8 w-8 p-0"
+                          onClick={(e) => handleEditClick(category.id, e)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCategoryClick(category.id);
+                          }}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
