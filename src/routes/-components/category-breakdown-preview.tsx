@@ -42,7 +42,7 @@ export function CategoryBreakdownPreview() {
             </div>
             <svg viewBox="0 0 100 100" className="h-40 w-40">
               {categories.reduce(
-                (acc, category, index) => {
+                (acc, category) => {
                   const percentage = category.percentage;
                   const strokeDasharray = `${percentage} ${100 - percentage}`;
                   const strokeDashoffset = -acc.offset;
