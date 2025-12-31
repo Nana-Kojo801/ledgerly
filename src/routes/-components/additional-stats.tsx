@@ -1,5 +1,5 @@
 // src/routes/dashboard/-components/additional-stats.tsx
-import { TrendingUp, TrendingDown, Target, AlertCircle, Calendar, BarChart3 } from "lucide-react";
+import { Target, AlertCircle, Calendar, BarChart3 } from "lucide-react";
 import { mockDashboardData } from "../-mock-data.ts";
 
 export function AdditionalStats() {

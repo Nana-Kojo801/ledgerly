@@ -10,6 +10,7 @@ import {
 import { AlertTriangle } from 'lucide-react'
 import db from '@/lib/db'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { getCategoryExpenseCount } from '@/routes/expenses/-utils'
 
 interface DeleteCategoryDialogProps {
   categoryId: string | null
@@ -27,7 +28,10 @@ export function DeleteCategoryDialog({
 
   if(!categoryId) return null
 
-  const category = useLiveQuery(() => db.categories.where('id').equals(categoryId).first())
+  const category = useLiveQuery(() => db.categories.get(categoryId), [categoryId])
+  const expenses = useLiveQuery(() => db.expenses.toArray())
+
+  const expenseCount = getCategoryExpenseCount(expenses || [], categoryId)
 
   const handleDelete = async () => {
     if (!category) return
@@ -54,7 +58,7 @@ export function DeleteCategoryDialog({
           <div className="rounded-lg bg-surface-2 p-4 border border-border/50">
             <div className="font-medium">{category.name}</div>
             <div className="text-sm text-muted-foreground">
-              {category.expenseCount} expenses will be moved to "Uncategorized"
+              {expenseCount} expenses will be moved to "Uncategorized"
             </div>
           </div>
 

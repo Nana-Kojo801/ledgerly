@@ -125,14 +125,14 @@ export function CategoryBreakdown() {
               <Bar 
                 dataKey="value" 
                 radius={[4, 4, 0, 0]}
-                onMouseEnter={(data) => setHoveredCategory(data.fullName)}
+                onMouseEnter={(data) => setHoveredCategory(data.name || '')}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
                 {barChartData.map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`}
                     fill={entry.color}
-                    opacity={hoveredCategory === null || hoveredCategory === entry.fullName ? 1 : 0.6}
+                    opacity={hoveredCategory === null || hoveredCategory === entry.name ? 1 : 0.6}
                     className="transition-opacity duration-200"
                   />
                 ))}

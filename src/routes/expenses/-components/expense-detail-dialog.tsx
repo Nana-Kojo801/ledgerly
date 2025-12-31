@@ -153,7 +153,6 @@ export function ExpenseDetailDialog({
       {/* Delete Confirmation Dialog */}
       <DeleteExpenseDialog
         expenseId={expenseId}
-        expenseName={expense.note}
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onDeleteComplete={handleDeleteComplete}
