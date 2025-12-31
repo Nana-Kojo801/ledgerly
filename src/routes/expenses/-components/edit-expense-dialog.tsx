@@ -1,5 +1,8 @@
 // src/routes/expenses/-components/edit-expense-dialog.tsx
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,8 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,13 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { mockExpenses, mockCategories } from "../-mock-data.ts";
+import { type ExpenseFormValues, expenseFormSchema } from "../-validators.ts";
+import db from "@/lib/db.ts";
+import { useLiveQuery } from "dexie-react-hooks";
+
 
 interface EditExpenseDialogProps {
   expenseId: string;
@@ -39,147 +52,228 @@ export function EditExpenseDialog({
   onOpenChange,
   onEditComplete 
 }: EditExpenseDialogProps) {
-  const expense = mockExpenses.find(e => e.id === expenseId);
+  const expense = useLiveQuery(() => db.expenses.get(expenseId), [expenseId]);
   
-  const [date, setDate] = useState<Date>();
-  const [category, setCategory] = useState("");
-  const [amount, setAmount] = useState("");
-  const [note, setNote] = useState("");
+  const availableCategories = useLiveQuery(() => db.categories.toArray())
 
-  // Initialize form with expense data
+  // Initialize form
+  const form = useForm<ExpenseFormValues>({
+    resolver: zodResolver(expenseFormSchema as any),
+    defaultValues: {
+      amount: "",
+      category: "",
+      date: new Date(),
+      note: "",
+    },
+    mode: "onChange",
+  });
+
+  // Populate form with expense data when dialog opens
   useEffect(() => {
-    if (expense) {
-      setDate(new Date(expense.date));
-      setCategory(expense.categoryId);
-      setAmount(expense.amount.toString());
-      setNote(expense.note);
+    if (expense && isOpen) {
+      form.reset({
+        amount: expense.amount.toString(),
+        category: expense.categoryId,
+        date: new Date(expense.date),
+        note: expense.note,
+      });
     }
-  }, [expense, isOpen]);
+  }, [expense, isOpen, form]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Mock: Show success feedback
-    console.log('Expense updated:', { amount, category, date, note });
+  const handleSubmit = async (values: ExpenseFormValues) => {
+    if (!expense) return;
     
-    // Show visual feedback before closing
-    setTimeout(() => {
+    try {
+      await db.expenses.update(expense.id, {
+        ...values,
+        amount: parseFloat(values.amount),
+        date: values.date.toISOString(),
+      })
+      
       onEditComplete();
       onOpenChange(false);
-    }, 300);
+    } catch (error) {
+      console.error('Error updating expense:', error);
+    }
   };
 
-  if (!expense) return null;
+  const handleCancel = () => {
+    form.reset();
+    onOpenChange(false);
+  };
+
+  if (expense === undefined) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Edit Expense</DialogTitle>
-            <DialogDescription>
-              Update the expense details below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-amount" className="text-right">
-                Amount
-              </Label>
-              <div className="relative col-span-3">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  id="edit-amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="pl-7"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
+      <DialogContent className="sm:max-w-[500px] max-h-[75vh] overflow-y-auto rounded-lg border-border/50">
+        <DialogHeader>
+          <DialogTitle>Edit Expense</DialogTitle>
+          <DialogDescription>
+            Update the expense details below.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <div className="space-y-4">
+              {/* Amount Field */}
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                          $
+                        </span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          placeholder="0.00"
+                          className="pl-7 rounded-lg bg-surface-2 border-border/50"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Enter the amount you spent
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-category" className="text-right">
-                Category
-              </Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockCategories
-                    .filter((cat) => cat.id !== "all")
-                    .map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {/* Category Field */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="rounded-lg bg-surface-2 border-border/50">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-lg border-border/50 max-h-[300px]">
+                        {availableCategories?.map((category) => (
+                          <SelectItem 
+                            key={category.id} 
+                            value={category.id}
+                            className="rounded-md"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`h-3 w-3 rounded-full ${category.color}`} />
+                              <span>{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select the category this expense belongs to
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-date" className="text-right">
-                Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "col-span-3 justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+              {/* Date Field */}
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "rounded-lg bg-surface-2 border-border/50 justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-lg border-border/50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          autoFocus
+                          className="rounded-lg"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormDescription>
+                      Select the date when this expense occurred
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-note" className="text-right">
-                Note
-              </Label>
-              <Textarea
-                id="edit-note"
-                placeholder="Add a note (optional)"
-                className="col-span-3"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
+              {/* Note Field */}
+              <FormField
+                control={form.control}
+                name="note"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Add a note about this expense"
+                        className="rounded-lg bg-surface-2 border-border/50 min-h-[100px]"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Optional note to provide context for this expense
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit"
-              disabled={!amount || !category}
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </form>
+
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleCancel}
+                disabled={form.formState.isSubmitting}
+                className="rounded-lg"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit"
+                className="rounded-lg"
+                disabled={form.formState.isSubmitting || !form.formState.isValid || !form.formState.isDirty}
+              >
+                {form.formState.isSubmitting ? 'Saving...' : 'Save changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

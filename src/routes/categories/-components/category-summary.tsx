@@ -1,52 +1,53 @@
 // src/routes/categories/-components/category-summary.tsx
-import { TrendingUp, Target, PieChart, AlertCircle } from "lucide-react";
-import { mockCategorySummary } from "../-mock-data.ts";
+import { TrendingUp, Target, PieChart, AlertCircle } from 'lucide-react'
+import { formatCurrency, getCategorySummary } from '../-utils.ts'
+import { useLiveQuery } from 'dexie-react-hooks'
+import db from '@/lib/db'
 
 export function CategorySummary() {
-  const { totalCategories, totalBudget, totalSpent, averageUtilization } = mockCategorySummary;
-  
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  const categories = useLiveQuery(() => db.categories.toArray())
+  const expenses = useLiveQuery(() => db.expenses.toArray())
+
+  if (categories === undefined || expenses === undefined) return null
+
+  const { totalCategories, totalBudget, totalSpent, averageUtilization } =
+    getCategorySummary(categories, expenses)
 
   const cards = [
     {
-      title: "Total Categories",
+      title: 'Total Categories',
       value: totalCategories.toString(),
       icon: PieChart,
-      description: "Active spending categories",
-      color: "text-primary",
+      description: 'Active spending categories',
+      color: 'text-primary',
     },
     {
-      title: "Monthly Budget",
+      title: 'Monthly Budget',
       value: formatCurrency(totalBudget),
       icon: Target,
-      description: "Total allocated budget",
-      color: "text-positive",
+      description: 'Total allocated budget',
+      color: 'text-positive',
     },
     {
-      title: "Current Spend",
+      title: 'Current Spend',
       value: formatCurrency(totalSpent),
       icon: TrendingUp,
-      description: "Spent this month",
-      color: "text-negative",
+      description: 'Spent this month',
+      color: 'text-negative',
     },
     {
-      title: "Budget Utilization",
+      title: 'Budget Utilization',
       value: `${averageUtilization}%`,
       icon: AlertCircle,
-      description: "Average category usage",
-      color: averageUtilization > 80 ? "text-destructive" : "text-warning",
+      description: 'Average category usage',
+      color: averageUtilization > 80 ? 'text-destructive' : 'text-warning',
     },
-  ];
+  ]
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
-        <div 
+        <div
           key={card.title}
           className="rounded-lg bg-surface-1 p-4 border border-border/50"
         >
@@ -63,5 +64,5 @@ export function CategorySummary() {
         </div>
       ))}
     </div>
-  );
+  )
 }

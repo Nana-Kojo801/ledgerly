@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
-import { mockExpenses } from "../-mock-data.ts";
 import { ExpenseTable } from "./expense-table";
 import { ExpenseCards } from "./expense-cards";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useLiveQuery } from "dexie-react-hooks";
+import db from "@/lib/db.ts";
 
 interface ExpenseListProps {
   selectedCategory: string;
@@ -17,18 +18,30 @@ export function ExpenseList({
   onExpenseClick 
 }: ExpenseListProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  const expenses = useLiveQuery(() => db.expenses.toArray())
+
+  if(expenses === undefined) return null
   
   // Mock filtering logic (UI-only)
-  const filteredExpenses = mockExpenses.filter(expense => {
+  const filteredExpenses = expenses.filter(expense => {
     if (selectedCategory !== 'all' && expense.categoryId !== selectedCategory) {
       return false;
     }
     
     // Mock date filtering based on selected range
     if (selectedDateRange === 'week') {
-      return expense.date >= '2024-01-08';
+      const today = new Date()
+      const expenseDate = new Date(expense.date)
+      const minDate = new Date()
+      minDate.setDate(today.getDate() - 7)
+      return expenseDate >= minDate;
     } else if (selectedDateRange === 'month') {
-      return expense.date >= '2024-01-01';
+      const today = new Date()
+      const expenseDate = new Date(expense.date)
+      const minDate = new Date()
+      minDate.setMonth(today.getMonth() - 1)
+      return expenseDate >= minDate;
     }
     
     return true;

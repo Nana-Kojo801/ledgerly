@@ -1,9 +1,11 @@
 // src/routes/expenses/-components/expense-filters.tsx
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, X } from "lucide-react";
-import { mockCategories, mockDateRanges } from "../-mock-data.ts";
+import { X } from "lucide-react";
 import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import db from "@/lib/db.ts";
+import { dateRanges, getCategoryExpenseCount } from "../-utils.ts";
 
 interface ExpenseFiltersProps {
   selectedCategory: string;
@@ -20,25 +22,30 @@ export function ExpenseFilters({
 }: ExpenseFiltersProps) {
   const [activeFilters, setActiveFilters] = useState<string[]>(["This Month"]);
 
+  const categories = useLiveQuery(() => db.categories.toArray())
+  const expenses = useLiveQuery(() => db.expenses.toArray())
+
+  if(categories === undefined || expenses === undefined) return null
+
   const removeFilter = (filter: string) => {
     setActiveFilters(activeFilters.filter((f) => f !== filter));
   };
 
   const handleCategoryChange = (categoryId: string) => {
     onCategoryChange(categoryId);
-    const categoryName = mockCategories.find(c => c.id === categoryId)?.name;
+    const categoryName = categories.find(c => c.id === categoryId)?.name;
     if (categoryId !== 'all' && categoryName) {
-      setActiveFilters(prev => [...prev.filter(f => !mockCategories.some(c => c.name === f)), categoryName]);
+      setActiveFilters(prev => [...prev.filter(f => !categories.some(c => c.name === f)), categoryName]);
     } else {
-      setActiveFilters(prev => prev.filter(f => !mockCategories.some(c => c.name === f)));
+      setActiveFilters(prev => prev.filter(f => !categories.some(c => c.name === f)));
     }
   };
 
   const handleDateRangeChange = (rangeId: string) => {
     onDateRangeChange(rangeId);
-    const rangeName = mockDateRanges.find(r => r.id === rangeId)?.name;
+    const rangeName = dateRanges.find(r => r.id === rangeId)?.name;
     if (rangeName) {
-      setActiveFilters(prev => [...prev.filter(f => !mockDateRanges.some(r => r.name === f)), rangeName]);
+      setActiveFilters(prev => [...prev.filter(f => !dateRanges.some(r => r.name === f)), rangeName]);
     }
   };
 
@@ -62,10 +69,10 @@ export function ExpenseFilters({
                 onClick={() => {
                   removeFilter(filter);
                   // Also clear the corresponding selection
-                  if (mockCategories.some(c => c.name === filter)) {
+                  if (categories.some(c => c.name === filter)) {
                     onCategoryChange('all');
                   }
-                  if (mockDateRanges.some(r => r.name === filter)) {
+                  if (dateRanges.some(r => r.name === filter)) {
                     onDateRangeChange('month');
                   }
                 }}
@@ -96,7 +103,7 @@ export function ExpenseFilters({
         <div className="space-y-2">
           <div className="text-sm font-medium">Category</div>
           <div className="flex flex-wrap items-center gap-2">
-            {mockCategories.map((category) => (
+            {categories.map((category) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
@@ -110,7 +117,7 @@ export function ExpenseFilters({
                     variant="secondary"
                     className="ml-1 h-4 min-w-4 px-1 text-xs"
                   >
-                    {category.count}
+                    {getCategoryExpenseCount(expenses, category.id)}
                   </Badge>
                 )}
               </Button>
@@ -123,7 +130,7 @@ export function ExpenseFilters({
           <div className="text-sm font-medium">Date Range</div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex flex-wrap items-center gap-1">
-              {mockDateRanges.map((range) => (
+              {dateRanges.map((range) => (
                 <Button
                   key={range.id}
                   variant={selectedDateRange === range.id ? "default" : "outline"}
@@ -135,14 +142,6 @@ export function ExpenseFilters({
                 </Button>
               ))}
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="h-7 px-2"
-              onClick={() => console.log('Calendar picker would open')}
-            >
-              <Calendar className="h-3 w-3" />
-            </Button>
           </div>
         </div>
       </div>

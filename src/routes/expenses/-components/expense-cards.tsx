@@ -3,8 +3,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Tag, DollarSign } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { type Expense } from "../-mock-data.ts";
 import { format } from "date-fns";
+import type { Expense } from "@/types";
+import db from "@/lib/db";
+import { useLiveQuery } from "dexie-react-hooks";
 
 interface ExpenseCardsProps {
   expenses: Expense[];
@@ -12,6 +14,9 @@ interface ExpenseCardsProps {
 }
 
 export function ExpenseCards({ expenses, onExpenseClick }: ExpenseCardsProps) {
+
+  const categories = useLiveQuery(() => db.categories.toArray())
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -22,6 +27,8 @@ export function ExpenseCards({ expenses, onExpenseClick }: ExpenseCardsProps) {
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), "MMM d, yyyy");
   };
+
+  const getExpenseCategory = (categoryId: string) => categories?.find(cat => cat.id === categoryId)?.name || ''
 
   const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -52,7 +59,7 @@ export function ExpenseCards({ expenses, onExpenseClick }: ExpenseCardsProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <Badge variant="secondary" className="font-normal">
-                {expense.category}
+                {getExpenseCategory(expense.categoryId)}
               </Badge>
             </Link>
           </div>
@@ -66,7 +73,7 @@ export function ExpenseCards({ expenses, onExpenseClick }: ExpenseCardsProps) {
             
             <div className="flex items-center gap-1">
               <Tag className="h-3 w-3" />
-              <span className="text-xs">{expense.category}</span>
+              <span className="text-xs">{getExpenseCategory(expense.categoryId)}</span>
             </div>
           </div>
 

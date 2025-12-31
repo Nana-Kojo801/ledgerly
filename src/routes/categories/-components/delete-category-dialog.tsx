@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -6,36 +6,36 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { AlertTriangle } from "lucide-react";
-import { mockCategories } from "../-mock-data.ts";
+} from '@/components/ui/dialog'
+import { AlertTriangle } from 'lucide-react'
+import db from '@/lib/db'
+import { useLiveQuery } from 'dexie-react-hooks'
 
 interface DeleteCategoryDialogProps {
-  categoryId: string | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDeleteComplete: () => void;
+  categoryId: string | null
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  onDeleteComplete: () => void
 }
 
-export function DeleteCategoryDialog({ 
-  categoryId, 
-  isOpen, 
+export function DeleteCategoryDialog({
+  categoryId,
+  isOpen,
   onOpenChange,
-  onDeleteComplete
+  onDeleteComplete,
 }: DeleteCategoryDialogProps) {
-  const category = mockCategories.find(c => c.id === categoryId);
 
-  const handleDelete = () => {
-    // Mock: Show success feedback
-    console.log(`Category deleted: ${categoryId}`);
-    
-    setTimeout(() => {
-      onDeleteComplete();
-      onOpenChange(false);
-    }, 300);
-  };
+  if(!categoryId) return null
 
-  if (!category) return null;
+  const category = useLiveQuery(() => db.categories.where('id').equals(categoryId).first())
+
+  const handleDelete = async () => {
+    if (!category) return
+    await db.categories.delete(category.id)
+    onDeleteComplete()
+  }
+
+  if (!category) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -49,7 +49,7 @@ export function DeleteCategoryDialog({
             This action cannot be undone. Deleting this category will:
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="rounded-lg bg-surface-2 p-4 border border-border/50">
             <div className="font-medium">{category.name}</div>
@@ -61,7 +61,9 @@ export function DeleteCategoryDialog({
           <div className="rounded-lg border border-border/50 p-4">
             <div className="text-sm font-medium">Warning</div>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li>• All expenses in this category will be moved to "Uncategorized"</li>
+              <li>
+                • All expenses in this category will be moved to "Uncategorized"
+              </li>
               <li>• Monthly reports will reflect this change</li>
               <li>• Budget tracking for this category will stop</li>
               <li>• This action cannot be reversed</li>
@@ -70,15 +72,15 @@ export function DeleteCategoryDialog({
         </div>
 
         <DialogFooter className="flex-col gap-2 sm:flex-row">
-          <Button 
-            type="button" 
-            variant="outline" 
+          <Button
+            type="button"
+            variant="outline"
             className="flex-1 rounded-lg"
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             type="button"
             variant="destructive"
             className="flex-1 rounded-lg"
@@ -89,5 +91,5 @@ export function DeleteCategoryDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

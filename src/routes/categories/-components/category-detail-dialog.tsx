@@ -1,58 +1,84 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, DollarSign, Calendar, Tag, FileText, X, TrendingUp, TrendingDown, Target } from "lucide-react";
-import { mockCategories, getColorClass, formatCurrency } from "../-mock-data.ts";
-import { EditCategoryDialog } from "./edit-category-dialog";
-import { DeleteCategoryDialog } from "./delete-category-dialog";
+} from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import {
+  Edit,
+  Trash2,
+  DollarSign,
+  Calendar,
+  FileText,
+  TrendingUp,
+  TrendingDown,
+  Target,
+} from 'lucide-react'
+import { formatCurrency } from '../-mock-data.ts'
+import { EditCategoryDialog } from './edit-category-dialog'
+import { DeleteCategoryDialog } from './delete-category-dialog'
+import { useLiveQuery } from 'dexie-react-hooks'
+import db from '@/lib/db.ts'
+import { getCategoryCurrentSpend } from '../-utils.ts'
+import { getCategoryExpenseCount } from '@/routes/expenses/-utils.ts'
 
 interface CategoryDetailDialogProps {
-  categoryId: string | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  categoryId: string | null
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function CategoryDetailDialog({ 
-  categoryId, 
-  isOpen, 
-  onOpenChange 
+export function CategoryDetailDialog({
+  categoryId,
+  isOpen,
+  onOpenChange,
 }: CategoryDetailDialogProps) {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  if (!categoryId) return null;
+  const category = useLiveQuery(
+    () =>
+      !categoryId
+        ? undefined
+        : db.categories.get(categoryId),
+    [categoryId],
+  )
+  const expenses = useLiveQuery(() => db.expenses.toArray())
 
-  const category = mockCategories.find(c => c.id === categoryId);
-  if (!category) return null;
+  if (category === undefined || !category || !categoryId) return null
 
-  const percentageUsed = Math.round((category.currentSpend / category.monthlyBudget) * 100);
-  const remaining = category.monthlyBudget - category.currentSpend;
-  const dailyAverage = category.currentSpend / 30;
-  const isOverBudget = remaining < 0;
+  const currentSpend = getCategoryCurrentSpend(expenses || [], categoryId)
+  const expenseCount = getCategoryExpenseCount(expenses || [], categoryId)
+
+  const percentageUsed = Math.round(
+    (currentSpend / category.monthlyBudget) * 100,
+  )
+  const remaining = category.monthlyBudget - currentSpend
+  const dailyAverage = currentSpend / 30
+  const isOverBudget = remaining < 0
 
   const getBudgetStatus = () => {
-    if (percentageUsed >= 100) return { text: "Over budget", icon: TrendingUp, color: "text-destructive" };
-    if (percentageUsed >= 75) return { text: "Close to limit", icon: TrendingUp, color: "text-warning" };
-    return { text: "On track", icon: TrendingDown, color: "text-positive" };
-  };
+    if (percentageUsed >= 100)
+      return {
+        text: 'Over budget',
+        icon: TrendingUp,
+        color: 'text-destructive',
+      }
+    if (percentageUsed >= 75)
+      return { text: 'Close to limit', icon: TrendingUp, color: 'text-warning' }
+    return { text: 'On track', icon: TrendingDown, color: 'text-positive' }
+  }
 
-  const budgetStatus = getBudgetStatus();
-
-  const handleEditComplete = () => {
-    setIsEditDialogOpen(false);
-  };
+  const budgetStatus = getBudgetStatus()
 
   const handleDeleteComplete = () => {
-    setIsDeleteDialogOpen(false);
-    onOpenChange(false);
-  };
+    setIsDeleteDialogOpen(false)
+    onOpenChange(false)
+  }
 
   return (
     <>
@@ -70,17 +96,19 @@ export function CategoryDetailDialog({
           <div className="space-y-6 py-4">
             {/* Header with color and name */}
             <div className="flex items-center gap-4">
-              <div className={`h-12 w-12 rounded-lg ${getColorClass(category.color)} flex items-center justify-center`}>
+              <div
+                className={`h-12 w-12 rounded-lg ${category.color} flex items-center justify-center`}
+              >
                 <DollarSign className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{category.name}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant={isOverBudget ? "destructive" : "default"}>
+                  <Badge variant={isOverBudget ? 'destructive' : 'default'}>
                     {budgetStatus.text}
                   </Badge>
                   <Badge variant="outline">
-                    {category.expenseCount} expenses
+                    {expenseCount} expenses
                   </Badge>
                 </div>
               </div>
@@ -110,7 +138,9 @@ export function CategoryDetailDialog({
                   </div>
                   <div>
                     <div className="text-sm font-medium">Monthly Budget</div>
-                    <div className="text-lg font-bold">{formatCurrency(category.monthlyBudget)}</div>
+                    <div className="text-lg font-bold">
+                      {formatCurrency(category.monthlyBudget)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -122,7 +152,9 @@ export function CategoryDetailDialog({
                   </div>
                   <div>
                     <div className="text-sm font-medium">Current Spend</div>
-                    <div className="text-lg font-bold">{formatCurrency(category.currentSpend)}</div>
+                    <div className="text-lg font-bold">
+                      {formatCurrency(currentSpend)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -136,12 +168,12 @@ export function CategoryDetailDialog({
               </div>
               <div className="h-2 w-full rounded-full bg-surface-2 overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${getColorClass(category.color)}`}
+                  className={`h-full rounded-full ${category.color}`}
                   style={{ width: `${Math.min(percentageUsed, 100)}%` }}
                 />
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Spent: {formatCurrency(category.currentSpend)}</span>
+                <span>Spent: {formatCurrency(currentSpend)}</span>
                 <span>Budget: {formatCurrency(category.monthlyBudget)}</span>
               </div>
             </div>
@@ -149,8 +181,12 @@ export function CategoryDetailDialog({
             {/* Remaining & Daily Average */}
             <div className="grid grid-cols-2 gap-4">
               <div className="rounded-lg bg-surface-1 p-4 border border-border/50">
-                <div className="text-sm font-medium text-muted-foreground">Remaining</div>
-                <div className={`text-xl font-bold ${isOverBudget ? 'text-destructive' : 'text-positive'}`}>
+                <div className="text-sm font-medium text-muted-foreground">
+                  Remaining
+                </div>
+                <div
+                  className={`text-xl font-bold ${isOverBudget ? 'text-destructive' : 'text-positive'}`}
+                >
                   {formatCurrency(remaining)}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -159,8 +195,12 @@ export function CategoryDetailDialog({
               </div>
 
               <div className="rounded-lg bg-surface-1 p-4 border border-border/50">
-                <div className="text-sm font-medium text-muted-foreground">Daily Average</div>
-                <div className="text-xl font-bold">{formatCurrency(dailyAverage)}</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  Daily Average
+                </div>
+                <div className="text-xl font-bold">
+                  {formatCurrency(dailyAverage)}
+                </div>
                 <div className="text-xs text-muted-foreground">
                   Per day this month
                 </div>
@@ -205,5 +245,5 @@ export function CategoryDetailDialog({
         onDeleteComplete={handleDeleteComplete}
       />
     </>
-  );
+  )
 }

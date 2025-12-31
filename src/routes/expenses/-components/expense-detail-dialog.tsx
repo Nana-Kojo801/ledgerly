@@ -1,59 +1,64 @@
 // src/routes/expenses/-components/expense-detail-dialog.tsx
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Calendar, Tag, FileText } from "lucide-react";
-import { mockExpenses } from "../-mock-data.ts";
-import { format } from "date-fns";
-import { EditExpenseDialog } from "./edit-expense-dialog";
-import { DeleteExpenseDialog } from "./delete-expense-dialog";
+} from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+import { Edit, Trash2, Calendar, Tag, FileText } from 'lucide-react'
+import { format } from 'date-fns'
+import { EditExpenseDialog } from './edit-expense-dialog'
+import { DeleteExpenseDialog } from './delete-expense-dialog'
+import { useLiveQuery } from 'dexie-react-hooks'
+import db from '@/lib/db.ts'
+import { getExpenseCategory } from '../-utils'
 
 interface ExpenseDetailDialogProps {
-  expenseId: string | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  expenseId: string | null
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function ExpenseDetailDialog({ 
-  expenseId, 
-  isOpen, 
-  onOpenChange 
+export function ExpenseDetailDialog({
+  expenseId,
+  isOpen,
+  onOpenChange,
 }: ExpenseDetailDialogProps) {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  if (!expenseId) return null;
+  const expense = useLiveQuery(
+    () => (!expenseId ? undefined : db.expenses.get(expenseId)),
+    [expenseId],
+  )
+  const categories = useLiveQuery(() => db.categories.toArray())
 
-  const expense = mockExpenses.find(e => e.id === expenseId);
-  if (!expense) return null;
+  if (expense === undefined || !expenseId) return null
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount)
+  }
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "MMMM d, yyyy");
-  };
+    return format(new Date(dateString), 'MMMM d, yyyy')
+  }
 
   const handleEditComplete = () => {
-    setIsEditDialogOpen(false);
+    setIsEditDialogOpen(false)
     // Reopen this dialog after edit
-  };
+  }
 
   const handleDeleteComplete = () => {
-    setIsDeleteDialogOpen(false);
-    onOpenChange(false); // Close detail dialog after delete
-  };
+    setIsDeleteDialogOpen(false)
+    onOpenChange(false) // Close detail dialog after delete
+  }
 
   return (
     <>
@@ -72,7 +77,9 @@ export function ExpenseDetailDialog({
             {/* Amount - Highlighted */}
             <div className="rounded-lg bg-accent p-4 text-center">
               <div className="text-sm text-muted-foreground">Amount</div>
-              <div className="text-3xl font-bold">{formatCurrency(expense.amount)}</div>
+              <div className="text-3xl font-bold">
+                {formatCurrency(expense.amount)}
+              </div>
             </div>
 
             {/* Details Grid */}
@@ -94,7 +101,7 @@ export function ExpenseDetailDialog({
                 <div>
                   <div className="text-sm text-muted-foreground">Category</div>
                   <Badge variant="secondary" className="mt-1">
-                    {expense.category}
+                    {getExpenseCategory(categories || [], expense.categoryId)}
                   </Badge>
                 </div>
               </div>
@@ -105,7 +112,9 @@ export function ExpenseDetailDialog({
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Notes</div>
-                  <div className="font-medium">{expense.note || "No notes"}</div>
+                  <div className="font-medium">
+                    {expense.note || 'No notes'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -150,5 +159,5 @@ export function ExpenseDetailDialog({
         onDeleteComplete={handleDeleteComplete}
       />
     </>
-  );
+  )
 }

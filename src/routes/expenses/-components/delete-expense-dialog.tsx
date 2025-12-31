@@ -8,33 +8,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import db from "@/lib/db";
+import { useLiveQuery } from "dexie-react-hooks";
 import { AlertTriangle } from "lucide-react";
 
 interface DeleteExpenseDialogProps {
   expenseId: string;
-  expenseName: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleteComplete: () => void;
 }
 
 export function DeleteExpenseDialog({ 
-  expenseId, 
-  expenseName,
+  expenseId,
   isOpen, 
   onOpenChange,
   onDeleteComplete 
 }: DeleteExpenseDialogProps) {
-  const handleDelete = () => {
-    // Mock: Show success feedback
-    console.log(`Expense deleted: ${expenseId}`);
-    
-    // Show visual feedback before closing
-    setTimeout(() => {
-      onDeleteComplete();
-      onOpenChange(false);
-    }, 300);
+  const expense = useLiveQuery(() => db.expenses.get(expenseId), [expenseId])
+
+  const handleDelete = async () => {
+    await db.expenses.delete(expenseId)
+    onDeleteComplete()
   };
+
+  if(expense === undefined) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -50,7 +48,7 @@ export function DeleteExpenseDialog({
         </DialogHeader>
         
         <div className="rounded-lg bg-destructive/10 p-4">
-          <div className="font-medium">{expenseName}</div>
+          <div className="font-medium">{expense.note}</div>
           <div className="text-sm text-muted-foreground">
             This expense will be removed from all reports and cannot be recovered.
           </div>
