@@ -9,6 +9,7 @@ export const formatCurrency = (amount: number) => {
 }
 
 export const calculatePercentage = (current: number, budget: number) => {
+  if (budget === 0) return 0
   return Math.min(Math.round((current / budget) * 100), 100)
 }
 
@@ -31,7 +32,8 @@ export const getCategorySummary = (
     totalCategories: categories.length,
     totalBudget,
     totalSpent,
-    averageUtilization: Math.round((totalSpent / totalBudget) * 100),
+    averageUtilization:
+      totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0,
   }
 }
 

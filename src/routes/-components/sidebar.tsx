@@ -52,15 +52,6 @@ export function Sidebar() {
           })}
         </nav>
       </div>
-
-      {/* Fixed bottom section */}
-      <div className="border-t border-border p-4 mt-auto shrink-0">
-        <div className="text-xs text-muted-foreground">
-          <p className="font-medium">Current Balance</p>
-          <p className="text-lg font-semibold text-foreground">$4,287.50</p>
-          <p className="mt-1">Updated just now</p>
-        </div>
-      </div>
     </aside>
   )
 }
